@@ -48,6 +48,14 @@ Validated locally:
 Runtime validation with a real Windows audio interface and guitar input is still
 pending.
 
+Latest moved-checkout verification, run 2026-09-06 from `D:\code\Guitarwin`,
+used `D:\tmp\codex\guitarwin-build-20260906` as the staged prefix and
+`D:\tmp\codex\guitarwin-bundle-lv2-20260906` as the full bundle. It confirmed
+`./waf build -j 4`, `./waf install`, 72 `lv2ls` Guitarix entries from the staged
+LV2 root, static bundle verification, 72 `lv2ls` entries from the packaged
+bundle `lib/lv2`, and no-GUI JACK/Guitarix smoke with `GuitarixAlive: True` and
+`JackInitLogged: True`.
+
 ## Build environment
 
 This branch currently assumes MSYS2 is installed at `C:\msys64` and builds from

@@ -16,6 +16,9 @@ This project follows the Keep a Changelog format.
 
 ### Changed
 
+- Re-verified the moved `D:\code\Guitarwin` checkout with LV2 enabled: build,
+  staged install, packaged `--include-lv2` bundle discovery, static bundle
+  verification, and no-GUI JACK/Guitarix smoke all pass from D: scratch paths.
 - Documented `D:\tmp\codex` scratch paths and the explicit MSYS2 `INTLTOOL`
   configure override validated after moving the checkout to `D:\code`.
 - Updated Windows standalone setup notes for the moved `D:\code\Guitarwin`
