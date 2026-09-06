@@ -16,13 +16,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef GUITARIX_AS_PLUGIN
+#if !defined(GUITARIX_AS_PLUGIN) && defined(HAVE_LRDF)
 #include <lrdf.h>
 #endif
+#include <cstring>
 #include <ladspa.h>
-#include <dlfcn.h>
 
 #include "engine.h"
+#include "gx_dlcompat.h"
+#include "gx_file_compat.h"
 
 using Glib::ustring;
 using gx_system::JsonParser;
@@ -1174,7 +1176,7 @@ void PluginDesc::output_entry(JsonWriter& jw) {
     } else {
         jw.write(index);
     }
-    jw.write(uint(UniqueID));
+    jw.write(static_cast<unsigned int>(UniqueID));
     jw.write(Label);
     jw.end_array(true);
 }
@@ -1303,7 +1305,7 @@ static bool in_1_based_range(unsigned long uid) {
 //static
 void LadspaPluginList::set_instances(const char *uri, pluginmap& d, std::vector<ustring>& label,
                                      std::vector<unsigned long>& not_found, std::set<unsigned long>& seen) {
-#ifndef GUITARIX_AS_PLUGIN
+#if !defined(GUITARIX_AS_PLUGIN) && defined(HAVE_LRDF)
     lrdf_uris *uris = lrdf_get_instances(uri);
     if (uris) {
         for (unsigned int i = 0; i < uris->count; ++i) {
@@ -1360,7 +1362,7 @@ void LadspaPluginList::descend(const char *uri, pluginmap& d,
                                std::vector<unsigned long>& not_found,
                                std::set<unsigned long>& seen,
                                std::vector<ustring>& base) {
-#ifndef GUITARIX_AS_PLUGIN
+#if !defined(GUITARIX_AS_PLUGIN) && defined(HAVE_LRDF)
     lrdf_uris *uris = lrdf_get_subclasses(uri);
     if (uris) {
         for (unsigned int i = 0; i < uris->count; ++i) {
@@ -1664,7 +1666,7 @@ static bool cmp_plugins(const PluginDesc *a, const PluginDesc *b) {
 
 void LadspaPluginList::load(gx_system::CmdlineOptions& options, std::vector<std::string>& old_not_found) {
     pluginmap d;
-#ifndef GUITARIX_AS_PLUGIN
+#if !defined(GUITARIX_AS_PLUGIN) && defined(HAVE_LRDF)
     gx_system::PathList pl("LADSPA_PATH");
     if (!pl.size()) {
         pl.add("/usr/lib/ladspa");
@@ -1829,23 +1831,19 @@ void LadspaPluginList::save(gx_system::CmdlineOptions& options) {
 
 #pragma GCC diagnostic push 
 #pragma GCC diagnostic ignored "-Wunused-result"
-    if (rename(tfname.c_str(), fname.c_str()) != 0) {
-        char buf[100];
-        strerror_r(errno, buf, sizeof(buf));
+    if (gx_replace_file(tfname.c_str(), fname.c_str()) != 0) {
         gx_print_error(
-            "ladspalist",ustring::compose(_("error renaming LADSPA config file '%1': %2"), fname, buf));
+            "ladspalist",ustring::compose(_("error renaming LADSPA config file '%1': %2"), fname, std::strerror(errno)));
         return;
     }
     for (std::vector<std::pair<std::string,std::string> >::iterator i = fl.begin(); i != fl.end(); ++i) {
         if (i->first.empty()) {
             unlink(i->second.c_str());
         } else {
-            if (rename(i->first.c_str(), i->second.c_str()) != 0) {
-                char buf[100];
-                strerror_r(errno, buf, sizeof(buf));
+            if (gx_replace_file(i->first.c_str(), i->second.c_str()) != 0) {
                 gx_print_error(
                     "ladspalist",
-                    ustring::compose("error renaming %1 to %2: %3\n", i->first, i->second, buf));
+                    ustring::compose("error renaming %1 to %2: %3\n", i->first, i->second, std::strerror(errno)));
             }
         }
     }

@@ -9,6 +9,7 @@
 #include <gtkmm/comboboxtext.h>
 #include <gtkmm/switch.h>
 #include <gtkmm/settings.h>
+#include <cstdlib>
 #include <gxwmm/init.h>
 #include <gxwmm/switch.h>
 #include <gxwmm/smallknob.h>
@@ -248,7 +249,7 @@ Demo::Demo():
 	adj->set_upper(1.0);
 	Glib::signal_timeout().connect(
 		[this] () {
-			float delta = 0.25 - ((float)random() / (2 * (float)RAND_MAX));
+			float delta = 0.25 - ((float)std::rand() / (2 * (float)RAND_MAX));
 			this->m_playhead_value = std::max(0.0f, std::min(this->m_playhead_value + delta, 1.0f));
 			this->m_playhead.cp_set_value(this->m_playhead_value);
 			return true;
@@ -283,7 +284,7 @@ Demo::Demo():
 	m_vbox3.add(m_fastmeter);
 	Glib::signal_timeout().connect(
 		[this] () {
-			float delta = 0.25 - ((float)random() / (2 * (float)RAND_MAX));
+			float delta = 0.25 - ((float)std::rand() / (2 * (float)RAND_MAX));
 			this->m_meter_value = std::max(0.0f, std::min(this->m_meter_value + delta, 1.0f));
 			this->m_fastmeter.set(this->m_meter_value);
 			return true;
@@ -303,7 +304,7 @@ Demo::Demo():
 			if (this->m_freq_index >= 6) {
 				this->m_freq_index = 0;
 			}
-			double error = 1 + (0.25 - ((float)random() / (2 * (float)RAND_MAX))) / 100.;
+			double error = 1 + (0.25 - ((float)std::rand() / (2 * (float)RAND_MAX))) / 100.;
 			this->m_tuner.set_freq(s_freq[this->m_freq_index] * error);
 			this->m_racktuner.set_freq(s_freq[this->m_freq_index] * error);
 			return true;

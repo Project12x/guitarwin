@@ -61,11 +61,13 @@ bool GxRtCheck::run_check() {
             boost::format(_("Can't use Realtime Priority")));
         isRT = false;
     }
-#elif defined(_WIN32)
+#elif defined(_WIN32) && !defined(__MINGW32__)
     // HIGH_PRIORITY_CLASS, THREAD_PRIORITY_TIME_CRITICAL
-    if (SetThreadPriority(_thd.native_handle(), 15)) {
+    if (!SetThreadPriority(reinterpret_cast<HANDLE>(_thd.native_handle()), THREAD_PRIORITY_TIME_CRITICAL)) {
         isRT = false;
     }
+#elif defined(_WIN32)
+    isRT = false;
 #else
     //system does not supports thread priority!
     isRT = false;

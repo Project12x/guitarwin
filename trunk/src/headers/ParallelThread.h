@@ -62,6 +62,15 @@
 
 #if defined(_WIN32)
 #define MINGW_STDTHREAD_REDUNDANCY_WARNING
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#if !defined(__MINGW32__)
+#include <windows.h>
+#endif
 #endif
 
 #include <atomic>
@@ -325,11 +334,14 @@ private:
         if (pthread_setschedparam(pThd.native_handle(), rt_policy, &sch_params)) {
             fprintf(stderr, "ParallelThread:%s fail to set priority %i shed %i\n", threadName.c_str(), rt_prio, rt_policy);
         }
-        #elif defined(_WIN32)
+        #elif defined(_WIN32) && !defined(__MINGW32__)
         // REALTIME_PRIORITY_CLASS, THREAD_PRIORITY_NORMAL
-        if (SetThreadPriority(pThd.native_handle(), 24)) {
+        if (!SetThreadPriority(reinterpret_cast<HANDLE>(pThd.native_handle()), THREAD_PRIORITY_TIME_CRITICAL)) {
             fprintf(stderr, "ParallelThread:%s fail to set priority\n", threadName.c_str());
         }
+        #elif defined(_WIN32)
+        (void)rt_prio;
+        (void)rt_policy;
         #else
         //system does not supports thread priority!
         #endif
@@ -348,7 +360,7 @@ private:
     }
 
     // simple implement clock_gettime for windows (8)
-    #if defined(_WIN32)
+    #if defined(_WIN32) && !defined(__MINGW32__)
     int clock_gettime(int, struct timespec *spec) {
         int64_t wTime;
         GetSystemTimePreciseAsFileTime((FILETIME*)&wTime);

@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 
 #include "engine.h"                  // NOLINT
+#include "gx_file_compat.h"
 
 #ifndef SCHED_IDLE
 #define SCHED_IDLE SCHED_OTHER  // non-linux systems
@@ -872,7 +873,7 @@ void PluginPresetList::save(const Glib::ustring& name, const std::string& id, co
                            boost::format(_("couldn't write %1%")) % tmpfile);
             return;
         }
-        int rc = rename(tmpfile.c_str(), filename.c_str());
+        int rc = gx_replace_file(tmpfile.c_str(), filename.c_str());
         if (rc != 0) {
             gx_print_error(_("save plugin preset"),
                            boost::format(_("couldn't rename %1% to %2%"))
@@ -913,7 +914,7 @@ bool PluginPresetList::remove(const Glib::ustring& name) {
                                boost::format(_("couldn't write %1%")) % tmpfile);
                 return false;
             }
-            int rc = rename(tmpfile.c_str(), filename.c_str());
+            int rc = gx_replace_file(tmpfile.c_str(), filename.c_str());
             if (rc != 0) {
                 gx_print_error(_("remove plugin preset"),
                                boost::format(_("couldn't rename %1% to %2%"))
@@ -1051,13 +1052,13 @@ string GxSettings::make_state_filename() {
 }
 
 bool GxSettings::check_create_config_dir(const Glib::ustring& dir) {
-    if (access((Glib::build_filename(dir, ".")).c_str(), R_OK|W_OK|X_OK) != 0) {
+    if (g_access((Glib::build_filename(dir, ".")).c_str(), R_OK|W_OK|X_OK) != 0) {
         if (errno != ENOENT) {
             throw GxFatalError(
                 boost::format(_("no read/write access in guitarix config dir '%1%'"))
                 % dir);
         }
-        if (mkdir(dir.c_str(), 0777) != 0) {
+        if (g_mkdir_with_parents(dir.c_str(), 0777) != 0) {
             throw GxFatalError(
                 boost::format(_("can't create guitarix config dir '%1%'"))
                 % dir);
@@ -1217,7 +1218,7 @@ void GxSettings::check_settings_dir(gx_system::CmdlineOptions& opt, bool *need_n
         check_create_config_dir(opt.get_temp_dir());
     }
     std::string fname = opt.get_preset_filepath(scratchpad_file);
-    if (access(fname.c_str(), R_OK) != 0) {
+    if (g_access(fname.c_str(), R_OK) != 0) {
         if (!gx_system::SettingsFileHeader::make_empty_settingsfile(fname)) {
             throw GxFatalError(
                 boost::format(_("can't create file in '%1%' !!??")) % opt.get_preset_dir());
@@ -1225,8 +1226,10 @@ void GxSettings::check_settings_dir(gx_system::CmdlineOptions& opt, bool *need_n
         *need_new_preset = true;
     }
     fname = opt.get_preset_filepath(bank_list);
-    if (access(fname.c_str(), R_OK) != 0) {
+    if (g_access(fname.c_str(), R_OK) != 0) {
         ofstream f(fname.c_str());
+        f.imbue(std::locale::classic());
+        f << "[\n]\n";
         if (!f.good()) {
             throw GxFatalError(
                 boost::format(_("can't create '%1%' in directory '%2%'"))

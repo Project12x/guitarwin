@@ -16,18 +16,33 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif
+
 #include "guitarix.h"
+#ifndef _WIN32
 #include <sys/mman.h>
+#endif
 #ifndef GUITARIX_AS_PLUGIN
 #include "jsonrpc_methods.h"
 #else
 #include "jsonrpc_methods-generated.h"
 #endif
+#ifndef _WIN32
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#endif
 #include <giomm/resolver.h>
 #include <giomm/inetsocketaddress.h>
 #ifdef HAVE_BLUEZ
@@ -36,7 +51,7 @@
 #endif
 
 
-#if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(_WINDOWS)
+#if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(_WIN32)
 #include <malloc.h>
 
 void set_memory_allocation() {
@@ -56,7 +71,7 @@ void set_memory_allocation() {}
 
 void lock_rt_memory() {
 #ifndef GUITARIX_AS_PLUGIN
-#ifndef __APPLE__
+#if !defined(__APPLE__) && !defined(_WIN32)
     extern char __start_rt_text[], __stop_rt_text[];
     extern char __start_rt_data[], __stop_rt_data[];
     struct {
@@ -89,7 +104,7 @@ void lock_rt_memory() {
 
 void unlock_rt_memory() {
 #ifndef GUITARIX_AS_PLUGIN
-#ifndef __APPLE__    
+#if !defined(__APPLE__) && !defined(_WIN32)
     extern char __start_rt_text[], __stop_rt_text[];
     extern char __start_rt_data[], __stop_rt_data[];
     struct {
@@ -1276,7 +1291,7 @@ void GxMachineRemote::create_bluetooth_socket(const Glib::ustring& bdaddr) {
 void GxMachineRemote::create_tcp_socket() {
     socket = Gio::Socket::create(Gio::SOCKET_FAMILY_IPV4, Gio::SOCKET_TYPE_STREAM, Gio::SOCKET_PROTOCOL_TCP);
     int flag = 1;
-    if (setsockopt(socket->get_fd(), IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int)))
+    if (setsockopt(socket->get_fd(), IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char*>(&flag), sizeof(int)))
         gx_print_error("GxMachineRemote","setsockopt(IPPROTO_TCP, TCP_NODELAY) failed");
     typedef std::vector< Glib::RefPtr<Gio::InetAddress> > adr_list;
     adr_list al;
@@ -1493,6 +1508,14 @@ void GxMachineRemote::handle_notify(gx_system::JsonStringParser *jp) {
 
 static int socket_get_available_bytes(const Glib::RefPtr<Gio::Socket>& socket) {
     // return socket->get_available_bytes();  // Glib 2.32
+#ifdef _WIN32
+    u_long avail = 0;
+    int ret = ioctlsocket(static_cast<SOCKET>(socket->get_fd()), FIONREAD, &avail);
+    if (ret != 0) {
+	return -1;
+    }
+    return static_cast<int>(avail);
+#else
     int avail;
     ioctl(socket->get_fd(), FIONREAD, &avail);
     int ret = ioctl(socket->get_fd(), FIONREAD, &avail);
@@ -1500,6 +1523,7 @@ static int socket_get_available_bytes(const Glib::RefPtr<Gio::Socket>& socket) {
 	return -1;
     }
     return avail;
+#endif
 }
 
 bool GxMachineRemote::socket_input_handler(Glib::IOCondition cond) {

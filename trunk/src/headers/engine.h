@@ -37,6 +37,20 @@
 #define GX_VERSION "0.44.1"
 #endif // GUITARIX_AS_PLUGIN
 
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <winsock2.h>
+#include <windows.h>
+#ifdef DELETE
+#undef DELETE
+#endif
+#endif
+
 /* system header files */
 #include <semaphore.h>
 #include <cmath>

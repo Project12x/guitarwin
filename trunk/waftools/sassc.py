@@ -1,6 +1,6 @@
 from waflib import Task, Utils
 from waflib.TaskGen import extension, feature
-import os, re
+import os, re, shutil
 
 def scan_scss(fname):
     defn = re.compile(' *\\* *([-a-zA-Z0-9_]+) *: *([-a-zA-Z0-9_.]+)').match
@@ -29,7 +29,10 @@ def link_icon(self):
         os.remove(lpath)
     elif os.path.exists(lpath):
         os.remove(lpath)
-    os.symlink(dst, lpath)
+    try:
+        os.symlink(dst, lpath)
+    except OSError:
+        shutil.copy2(self.inputs[0].abspath(), lpath)
 
 Task.task_factory(
     name    = 'link-icon',

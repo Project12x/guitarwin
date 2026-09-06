@@ -42,7 +42,7 @@ def gperf2cc(task):
         return node.parent.find_or_declare([name]).get_src().abspath()
     if task.env.HAVE_GPERF:
         # task.proc.bldpath() triggers bug in Waf 2.0.19 when logging is active
-        cmd = [task.proc.abspath()] + [n.bldpath() for n in task.inputs + task.outputs]
+        cmd = [sys.executable, task.proc.abspath()] + [n.bldpath() for n in task.inputs + task.outputs]
         Logs.debug("runner: system command -> %s" % cmd)
         ret = task.exec_command(cmd, shell=False)
         for out in task.outputs:
@@ -209,6 +209,8 @@ def build(bld):
     uselib = ['JACK', 'SNDFILE', 'GTHREAD', 'GMODULE_EXPORT', 'CURL', 'LIBLO',
               'GTK2', 'GTKMM', 'GIOMM', 'FFTW3', 'LRDF', 'LILV', 'BOOST_SYSTEM','BOOST_IOSTREAMS',
               'ZITA_CONVOLVER','ZITA_RESAMPLER']
+    if bld.env.IS_MSWIN:
+        uselib += ['WS2_32']
     if bld.env.HAVE_AVAHI:
         uselib += ['AVAHI_GOBJECT', 'AVAHI_GLIB', 'AVAHI_CLIENT']
     if bld.env.HAVE_BLUEZ:

@@ -16,10 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <dlfcn.h>
 #include <ladspa.h>
 
 #include "engine.h"
+#include "gx_dlcompat.h"
 
 using gx_system::JsonException;
 using gx_system::JsonParser;

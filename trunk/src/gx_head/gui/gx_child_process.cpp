@@ -24,7 +24,9 @@
 
 #include "guitarix.h"
 
+#ifndef _WIN32
 #include <sys/wait.h>
+#endif
 #include <glibmm/main.h>
 #include <fstream>
 #include <string>
@@ -35,6 +37,8 @@ namespace gx_child_process {
 /****************************************************************
  ** GxChild, GxChildProcs
  */
+
+#ifndef _WIN32
 
 bool GxChild::kill() {
     if (m_killsignal == SIGKILL) {
@@ -160,6 +164,59 @@ GxChild *GxChildProcs::launch(string name, list<string> args, int killsignal) {
 }
 
 GxChildProcs childprocs;
+
+#else
+
+bool GxChild::kill() {
+    return true;
+}
+
+GxChildProcs::~GxChildProcs() {
+    for (list<GxChild*>::iterator i = children.begin(); i != children.end(); ++i) {
+        delete *i;
+    }
+}
+
+bool GxChildProcs::killall() {
+    for (list<GxChild*>::iterator i = children.begin(); i != children.end(); ++i) {
+        delete *i;
+    }
+    children.clear();
+    return true;
+}
+
+bool GxChildProcs::kill(string name) {
+    GxChild *p = find(name);
+    if (!p) {
+        return true;
+    }
+    children.remove(p);
+    delete p;
+    return true;
+}
+
+GxChild *GxChildProcs::find(string name) {
+    for (list<GxChild*>::iterator i = children.begin(); i != children.end(); ++i) {
+        if ((*i)->hasName(name)) {
+            return *i;
+        }
+    }
+    return 0;
+}
+
+void gx_sigchld_handler() {}
+
+GxChild *GxChildProcs::launch(string, const char *const[], int) {
+    return 0;
+}
+
+GxChild *GxChildProcs::launch(string, list<string>, int) {
+    return 0;
+}
+
+GxChildProcs childprocs;
+
+#endif
 
 /****************************************************************
  ** Menu Callbacks

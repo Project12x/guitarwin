@@ -23,6 +23,7 @@
  */
 
 #include "engine.h"               // NOLINT
+#include "gx_file_compat.h"
 
 #include <sys/stat.h>
 
@@ -799,7 +800,7 @@ void ModifyState::close() {
 	gx_print_error(_("save preset"),
 		       boost::format(_("couldn't write %1%")) % tmpfile);
     } else {
-	int rc = rename(tmpfile.c_str(), filename.c_str());
+	int rc = gx_replace_file(tmpfile.c_str(), filename.c_str());
 	if (rc != 0) {
 	    gx_print_error(_("save preset"),
 			   boost::format(_("couldn't rename %1% to %2%"))
@@ -1204,7 +1205,7 @@ void PresetTransformer::close_nocheck() {
 		       boost::format(_("couldn't write %1%")) % tmpfile);
 	return;
     }
-    int rc = rename(tmpfile.c_str(), filename.c_str());
+    int rc = gx_replace_file(tmpfile.c_str(), filename.c_str());
     if (rc != 0) {
 	gx_print_error(_("save preset"),
 		       boost::format(_("couldn't rename %1% to %2%"))
@@ -1561,7 +1562,7 @@ void PresetBanks::save() {
 	gx_print_error(_("save banklist"),
 		       boost::format(_("couldn't write %1%")) % tmpfile);
     } else {
-	int rc = ::rename(tmpfile.c_str(), filepath.c_str());
+	int rc = gx_replace_file(tmpfile.c_str(), filepath.c_str());
 	if (rc != 0) {
 	    gx_print_error(_("save banklist"),
 			   boost::format(_("couldn't rename %1% to %2%"))

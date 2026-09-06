@@ -16,11 +16,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "jsonrpc.h"
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <unistd.h>
+#endif
+
+#include "jsonrpc.h"
 #if HAVE_BLUEZ
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
@@ -1289,9 +1302,23 @@ void CmdConnection::error_response(gx_system::JsonWriter& jw, int code, const ch
     jw.end_object();
 }
 
+static int socket_write(int fd, const char *data, unsigned int len) {
+#ifdef _WIN32
+    return ::send(static_cast<SOCKET>(fd), data, static_cast<int>(len), 0);
+#else
+    return ::write(fd, data, len);
+#endif
+}
+
+static void flush_saved_state_to_disk() {
+#ifndef _WIN32
+    ::sync();
+#endif
+}
+
 static bool sendbytes(int fd, const std::string& s, unsigned int *off) {
     unsigned int len = s.size() - *off;
-    int n = write(fd, s.c_str() + *off, len);
+    int n = socket_write(fd, s.c_str() + *off, len);
     if (n <= 0) {
         return false;
     }
@@ -1352,7 +1379,7 @@ void CmdConnection::send(gx_system::JsonStringWriter& jw) {
     if (outgoing.size() == 0) {
         assert(current_offset == 0);
         ssize_t len = s.size();
-        ssize_t n = write(connection->get_socket()->get_fd(), s.c_str(), len);
+        ssize_t n = socket_write(connection->get_socket()->get_fd(), s.c_str(), len);
         if (n == len) {
             return;
         }
@@ -2154,7 +2181,7 @@ void GxService::save_state() {
     }
     if (now - oldest_unsaved >= max_delay || now - last_change >= min_idle) {
         settings.save_to_state();
-        sync();
+        flush_saved_state_to_disk();
         oldest_unsaved = 0;
         save_conn.disconnect();
     } else {
@@ -2174,7 +2201,7 @@ bool GxService::on_incoming(const Glib::RefPtr<Gio::SocketConnection>& connectio
     Glib::RefPtr<Gio::Socket> sock = connection->get_socket();
     sock->set_blocking(false);
     int flag = 1;
-    if (setsockopt(sock->get_fd(), IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int)))
+    if (setsockopt(sock->get_fd(), IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char*>(&flag), sizeof(int)))
         gx_print_error("GxMachineRemote","setsockopt(IPPROTO_TCP, TCP_NODELAY) failed");
     Glib::signal_io().connect(
         sigc::mem_fun(cc, &CmdConnection::on_data_in),

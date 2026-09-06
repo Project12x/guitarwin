@@ -58,6 +58,12 @@ def options(opt):
                     default=True,
                     help=("Don't build standalone (JACK) application"))
 
+    opt.add_option('--no-lrdf',
+                    action='store_false',
+                    dest='lrdf',
+                    default=True,
+                    help=("Don't build with LRDF-backed LADSPA metadata support"))
+
     group = opt.add_option_group ('Localization and documentation', '')
     add_enable_option ('nls', 'native language support', group)
 
@@ -210,7 +216,10 @@ def check_boost(conf):
     conf.check_cxx(msg = msg, fragment=code, use='BOOST_SYSTEM', mandatory=1)
 
     msg = "Checking for boost_iostreams"
-    conf.check_cxx(msg = msg, fragment=code, lib=["boost_iostreams"], use='BOOST_SYSTEM', uselib_store="BOOST_IOSTREAMS", mandatory=1)
+    try:
+        conf.check_cxx(msg = msg, fragment=code, lib=["boost_iostreams"], use='BOOST_SYSTEM', uselib_store="BOOST_IOSTREAMS", mandatory=1)
+    except ConfigurationError:
+        conf.check_cxx(msg = "Checking for boost_iostreams-mt", fragment=code, lib=["boost_iostreams-mt"], use='BOOST_SYSTEM', uselib_store="BOOST_IOSTREAMS", mandatory=1)
 
     #try:
     #    conf.check_cxx(
@@ -315,18 +324,21 @@ def configure(conf):
             conf.env.append_value('OS_LV2_CXXFLAGS', ['-Wl,-z,relro,-z,now'])
     else:
         # MSWin changes
-        conf.env.prepend_value('OS_SNDFILE_CFGFLAGS', ['--static'])
-        conf.env['OS_CAIRO_CFGFLAGS']    = '--static %s' % conf.env['OS_CAIRO_CFGFLAGS']
+        if opt.static_lib:
+            conf.env.prepend_value('OS_SNDFILE_CFGFLAGS', ['--static'])
+            conf.env['OS_CAIRO_CFGFLAGS']    = '--static %s' % conf.env['OS_CAIRO_CFGFLAGS']
         conf.env['OS_RESOURCES_LDFLAGS'] = '' # no -z options
 
         conf.env.append_value('DEFINES', ['_USE_MATH_DEFINES=1'])
-        # waf always(!) adds "-Wl,-Bdynamic" (SHLIB_MARKER) to the commandline, even for an empty list of dynamic libs.
-        # MinGW-gcc automatically links libstdc++ and libgcc_seh dynamically, if "-Wl,-Bdynamic" is present.
-        # As a workaround, that marker is replaced by an empty string:
-        conf.env['SHLIB_MARKER'] = ''
-        # "-shared -static" builds a dynamic library which itself is statically linked
-        conf.env['LINKFLAGS_cshlib']=['-shared','-static']
-        conf.env['LINKFLAGS_cxxshlib']=['-shared','-static']
+        if opt.static_lib:
+            # waf always(!) adds "-Wl,-Bdynamic" (SHLIB_MARKER) to the commandline, even for an empty list of dynamic libs.
+            # MinGW-gcc automatically links libstdc++ and libgcc_seh dynamically, if "-Wl,-Bdynamic" is present.
+            # As a workaround, that marker is replaced by an empty string:
+            conf.env['SHLIB_MARKER'] = ''
+            # "-shared -static" builds a dynamic library which itself is statically linked
+            conf.env['LINKFLAGS_cshlib']=['-shared','-static']
+            conf.env['LINKFLAGS_cxxshlib']=['-shared','-static']
+        conf.env['LIB_WS2_32'] = ['ws2_32']
         conf.check(features='cxx cxxshlib', lib=['pthread'], uselib_store='PTHREAD')
 
     # needed libraries
@@ -362,7 +374,9 @@ def configure(conf):
 
     if opt.standalone:
         conf.check(header_name='ladspa.h', errmsg="ladspa.h not found, using included version now", mandatory=0)
-        conf.check_cfg(package='lrdf', args='--cflags --libs', uselib_store='LRDF', mandatory=1)
+        if opt.lrdf:
+            conf.check_cfg(package='lrdf', args='--cflags --libs', uselib_store='LRDF', mandatory=1)
+            conf.define("HAVE_LRDF", 1)
         conf.check_cfg(package='lilv-0', args='--cflags --libs', uselib_store='LILV', mandatory=1)
         check_boost(conf)
 

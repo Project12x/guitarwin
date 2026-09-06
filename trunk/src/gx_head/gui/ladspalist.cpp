@@ -16,9 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#if !defined(GUITARIX_AS_PLUGIN) && defined(HAVE_LRDF)
 #include <lrdf.h>
+#endif
 #include <ladspa.h>
-#include <dlfcn.h>
 
 #include "guitarix.h"
 

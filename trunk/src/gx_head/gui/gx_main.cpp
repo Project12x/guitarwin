@@ -30,6 +30,7 @@
 #include <gxwmm/init.h>     // NOLINT
 #include <condition_variable>
 #endif
+#include <cstdlib>
 #include <string>           // NOLINT
 #include <thread>
 
@@ -357,6 +358,18 @@ void GxTheme::reload_css() {
  ** instance of PosixSignals
  */
 
+#ifdef _WIN32
+
+class PosixSignals {
+public:
+    PosixSignals(bool, GxTheme * = nullptr) {
+        GxExit::get_instance().set_ui_thread();
+    }
+    ~PosixSignals() {}
+};
+
+#else
+
 class PosixSignals {
 private:
     sigset_t waitset;
@@ -547,6 +560,8 @@ void PosixSignals::signal_helper_thread() {
         }
     }
 }
+
+#endif
 
 
 /****************************************************************
@@ -956,7 +971,7 @@ int main(int argc, char *argv[]) {
     // automatically for HiDPI displays.
     // Note: we don't change then environment if it is already set to *any* value.
     if (!getenv("QT_AUTO_SCREEN_SCALE_FACTOR")) {
-        setenv("QT_AUTO_SCREEN_SCALE_FACTOR", "1", 0);
+        Glib::setenv("QT_AUTO_SCREEN_SCALE_FACTOR", "1", false);
     }
 #ifdef DISABLE_NLS
 // break

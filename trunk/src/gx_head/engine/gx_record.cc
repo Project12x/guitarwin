@@ -84,7 +84,11 @@ inline std::string SCapture::get_ffilename() {
     is_wav = int(fformat) ? false : true;
     pPath +="/gxrecord/";
     if (!(stat(pPath.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode))) {
+#ifdef _WIN32
+        mkdir(pPath.c_str());
+#else
         mkdir(pPath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
     }
     std::string defaultName = "guitarix_";
     // Get current time

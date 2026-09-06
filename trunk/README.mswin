@@ -1,17 +1,34 @@
-To compile the guitarix LV2 plugins on MS-Windows:
+To compile the Guitarix standalone application and LV2 plugins on MS-Windows:
 
 - Download and install MSYS2 from https://www.msys2.org/
 - Start a MinGW64 shell from the install location (e.g. "C:\MSYS64\MinGW64.exe")
 - Inside the shell, install the required packages using pacman:
   # pacman -Syu
-  # pacman -S git base-devel mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config mingw-w64-x86_64-libsigc++ mingw-w64-x86_64-lv2 mingw-w64-x86_64-eigen3 mingw-w64-x86_64-fftw mingw-w64-x86_64-libffi mingw-w64-x86_64-libsndfile mingw-w64-x86_64-cairo
+  # pacman -S git base-devel intltool \
+      mingw-w64-x86_64-gcc \
+      mingw-w64-x86_64-pkg-config \
+      mingw-w64-x86_64-jack2 \
+      mingw-w64-x86_64-lv2 \
+      mingw-w64-x86_64-lilv \
+      mingw-w64-x86_64-gtk3 \
+      mingw-w64-x86_64-gtkmm3 \
+      mingw-w64-x86_64-glibmm \
+      mingw-w64-x86_64-libsigc++ \
+      mingw-w64-x86_64-eigen3 \
+      mingw-w64-x86_64-fftw \
+      mingw-w64-x86_64-libsndfile \
+      mingw-w64-x86_64-cairo \
+      mingw-w64-x86_64-curl \
+      mingw-w64-x86_64-boost \
+      mingw-w64-x86_64-gperf \
+      mingw-w64-x86_64-sassc \
+      mingw-w64-x86_64-ladspa-sdk
 - Download the guitarix sources, change into its "trunk" directory (where the "waf" file resides)
   # git clone https://github.com/brummer10/guitarix
   # cd guitarix/trunk
-- Configure and build the plugins:
+- Configure and build the standalone application and LV2 plugins:
   # ./waf configure -j 4	\
       --check-cxx-compiler=g++	\
-      --no-standalone		\
       --no-faust		\
       --includeresampler	\
       --includeconvolver	\
@@ -19,9 +36,69 @@ To compile the guitarix LV2 plugins on MS-Windows:
       --no-bluez		\
       --no-nsm			\
       --no-desktop-update	\
-      --static-lib		\
-      && ./waf build && ./waf install --destdir=_bin
-- The compiled plugins should show up in the "trunk/_bin/" folder
+      --no-lrdf		\
+      && ./waf build
+- Stage an install tree:
+  # ./waf install --destdir=/c/tmp/guitarix-stage
+- Run a staged smoke with MSYS2 runtime DLLs on PATH:
+  # export PATH=/c/tmp/guitarix-stage/msys64/tmp/lib:/mingw64/bin:/usr/bin:$PATH
+  # /c/tmp/guitarix-stage/msys64/tmp/bin/guitarix.exe --version
+  # export LV2_PATH=/c/tmp/guitarix-stage/msys64/tmp/lib/lv2
+  # lv2ls | grep -c guitarix
+- Build a direct-launchable lean standalone bundle:
+  # python tools/package-msys2-standalone.py \
+      --staged-prefix /c/tmp/guitarix-stage/msys64/tmp \
+      --bundle-dir /c/tmp/guitarix-bundle
+- Build a bundle that also includes the installed Guitarix LV2 plugins:
+  # python tools/package-msys2-standalone.py \
+      --staged-prefix /c/tmp/guitarix-stage/msys64/tmp \
+      --bundle-dir /c/tmp/guitarix-bundle-lv2 \
+      --include-lv2
+
+The bundle helper copies MinGW/JACK/GTK runtime DLLs into "bin", copies
+GTK/GLib/GIO runtime data from the active MSYS2 MinGW prefix, includes
+"jackd.exe" and the JACK backend modules, and keeps only "greathall.wav" from
+the bundled IR library unless "--include-ir-library" is passed. Use
+"--no-gtk-runtime-data" only for dependency debugging. It also copies the
+MSYS2 MinGW per-package license files to "share/licenses" and writes a
+"THIRD_PARTY_LICENSES.md" pointer file; use "--no-runtime-licenses" only for
+local package debugging. Each bundle also gets "SOURCE.md" and
+"BUNDLE_MANIFEST.json" with source commit, selected packaging options, and copy
+counts.
+
+To smoke-test a bundle from PowerShell:
+
+  > powershell -ExecutionPolicy Bypass -File .\tools\smoke-msys2-standalone.ps1 -BundleDir C:\tmp\guitarix-bundle
+
+The smoke starts the bundled JACK dummy backend, runs "guitarix.exe -N
+--log-terminal", and checks that Guitarix logs the expected JACK sample rate and
+buffer size. Add "-Gui" to launch the full GUI briefly instead of the default
+no-GUI engine smoke.
+
+To check bundle contents without launching Guitarix:
+
+  > powershell -ExecutionPolicy Bypass -File .\tools\verify-msys2-standalone-bundle.ps1 -BundleDir C:\tmp\guitarix-bundle
+
+The verifier checks required executables, resources, GTK/JACK runtime data,
+license/source files, and the generated bundle manifest.
+
+To archive a verified bundle:
+
+  > powershell -ExecutionPolicy Bypass -File .\tools\archive-msys2-standalone.ps1 -BundleDir C:\tmp\guitarix-bundle -OutputDir C:\tmp\guitarix-dist
+
+The archive helper writes a ZIP and a ".sha256" checksum sidecar.
+It runs the static bundle verifier first unless "-SkipVerify" is passed.
+
+To archive the corresponding source tree from a clean Git checkout:
+
+  > powershell -ExecutionPolicy Bypass -File .\tools\archive-guitarwin-source.ps1 -OutputDir C:\tmp\guitarix-dist
+
+The source archive helper writes a Git "HEAD" source ZIP and a ".sha256"
+checksum sidecar. It refuses dirty working trees unless "-AllowDirty" is passed.
+
+The standalone executable resolves default skins, builder files, factory
+presets, pixmaps, and system IR files relative to the running executable's
+install prefix. This is required for running outside the compiled MSYS2 prefix.
 - Untested: To compile 32bit versions, start the MinGW32 shell and install the 32bit libraries (in the pacman clause, replace all "mingw64" by "mingw32" and all "x86_64" by "i686")
 
 --------------------------------------------------------------------------------

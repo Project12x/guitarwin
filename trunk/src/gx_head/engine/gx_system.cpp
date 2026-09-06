@@ -23,6 +23,7 @@
  */
 
 #include <dirent.h>
+#include <glib.h>
 #include <iostream>
 #include <iomanip>                  // NOLINT
 
@@ -271,6 +272,17 @@ bool PathList::contains(const string& d) const {
     return false;
 }
 
+void PathList::replace(const string& old_dir, const string& new_dir) {
+    Glib::RefPtr<Gio::File> old_file = Gio::File::create_for_path(old_dir);
+    for (pathlist::iterator i = dirs.begin(); i != dirs.end(); ++i) {
+	if (old_file->equal(*i)) {
+	    *i = Gio::File::create_for_path(new_dir);
+	    return;
+	}
+    }
+    add(new_dir);
+}
+
 
 bool PathList::find_dir(std::string* d, const std::string& filename) const {
     for (pathlist::const_iterator i = dirs.begin();
@@ -462,11 +474,14 @@ void BasicOptions::make_ending_slash(string& dirpath) {
     }
 }
 
-#ifdef GUITARIX_AS_PLUGIN
 void BasicOptions::replace_sysIRDir(const std::string& dir) {
-    IR_prefixmap.replace('S', dir);
+    std::string old_sys_IR_dir = sys_IR_dir;
+    sys_IR_dir = dir;
+    make_ending_slash(sys_IR_dir);
+    IR_pathlist.replace(old_sys_IR_dir, sys_IR_dir);
+    std::string prefix_dir = sys_IR_dir.substr(0, sys_IR_dir.size()-1);
+    IR_prefixmap.replace('S', prefix_dir);
 }
-#endif
 
 /****************************************************************
  ** class CmdlineOptions
@@ -561,9 +576,19 @@ CmdlineOptions::CmdlineOptions()
 #endif
     const char* home = getenv("HOME");
     if (!home) {
+#ifdef _WIN32
+	std::string home_dir = Glib::get_home_dir();
+	if (home_dir.empty()) {
+	    throw GxFatalError(_("no HOME environment variable"));
+	}
+	old_user_dir = Glib::build_filename(home_dir, ".gx_head");
+	make_ending_slash(old_user_dir);
+#else
 	throw GxFatalError(_("no HOME environment variable"));
+#endif
+    } else {
+	old_user_dir = string(home) + "/.gx_head/";
     }
-    old_user_dir = string(home) + "/.gx_head/";
     plugin_dir = Glib::build_filename(get_user_dir(), "plugins");
     preset_dir = Glib::build_filename(get_user_dir(), "banks");
     pluginpreset_dir = Glib::build_filename(get_user_dir(), "pluginpresets");
@@ -980,8 +1005,99 @@ static void log_terminal(const string& msg, GxLogger::MsgType tp, bool plugged) 
     }
 }
 
+#if defined(_WIN32) && !defined(GUITARIX_AS_PLUGIN)
+static std::string windows_module_path() {
+    std::vector<wchar_t> path(4096);
+    while (true) {
+        DWORD len = GetModuleFileNameW(NULL, path.data(), static_cast<DWORD>(path.size()));
+        if (len == 0) {
+            return "";
+        }
+        if (len < path.size()-1) {
+            gchar *utf8 = g_utf16_to_utf8(
+                reinterpret_cast<const gunichar2 *>(path.data()),
+                static_cast<glong>(len), NULL, NULL, NULL);
+            if (!utf8) {
+                return "";
+            }
+            std::string result(utf8);
+            g_free(utf8);
+            return result;
+        }
+        path.resize(path.size() * 2);
+    }
+}
+
+static std::string join_path(const std::string& base, const char *child) {
+    return Glib::build_filename(base, child);
+}
+
+static std::string join_path(const std::string& base, const char *child1, const char *child2) {
+    return Glib::build_filename(Glib::build_filename(base, child1), child2);
+}
+
+static bool has_file(const std::string& dir, const char *filename) {
+    std::string path = Glib::build_filename(dir, filename);
+    return g_file_test(path.c_str(), G_FILE_TEST_IS_REGULAR);
+}
+
+static std::string portable_prefix_from_executable(const std::string& executable_path) {
+    if (executable_path.empty()) {
+        return "";
+    }
+    std::string bin_dir = Glib::path_get_dirname(executable_path);
+    if (bin_dir.empty()) {
+        return "";
+    }
+    std::string prefix = Glib::path_get_dirname(bin_dir);
+    std::string style_dir = join_path(prefix, "share", "gx_head");
+    style_dir = join_path(style_dir, "skins");
+    if (!has_file(style_dir, "gx_head_Guitarix.css")) {
+        return "";
+    }
+    return prefix;
+}
+
+void CmdlineOptions::apply_windows_portable_resource_dirs() {
+    std::string prefix = portable_prefix_from_executable(path_to_program);
+    if (prefix.empty()) {
+        return;
+    }
+
+    std::string gx_share_dir = join_path(prefix, "share", "gx_head");
+    std::string portable_style_dir = join_path(gx_share_dir, "skins");
+    std::string portable_factory_dir = join_path(gx_share_dir, "factorysettings");
+    std::string portable_sound_dir = join_path(gx_share_dir, "sounds");
+    std::string portable_builder_dir = join_path(gx_share_dir, "builder");
+    std::string portable_pixmap_dir = join_path(join_path(prefix, "share"), "pixmaps");
+
+    if (style_dir == GX_STYLE_DIR && has_file(portable_style_dir, "gx_head_Guitarix.css")) {
+        style_dir = portable_style_dir;
+    }
+    if (builder_dir == GX_BUILDER_DIR && has_file(portable_builder_dir, "mainpanel.glade")) {
+        builder_dir = portable_builder_dir;
+    }
+    if (has_file(portable_factory_dir, "dirlist.js")) {
+        factory_dir = portable_factory_dir;
+    }
+    if (has_file(portable_pixmap_dir, "gx_head.png")) {
+        pixmap_dir = portable_pixmap_dir;
+    }
+    if (has_file(portable_sound_dir, "greathall.wav")) {
+        replace_sysIRDir(portable_sound_dir);
+    }
+}
+#endif
+
 void CmdlineOptions::process(int argc, char** argv) {
+#if defined(_WIN32) && !defined(GUITARIX_AS_PLUGIN)
+    path_to_program = windows_module_path();
+    if (path_to_program.empty()) {
+        path_to_program = Gio::File::create_for_path(argv[0])->get_path();
+    }
+#else
     path_to_program = Gio::File::create_for_path(argv[0])->get_path();
+#endif
     if (version) {
         std::cout << "Guitarix version \033[1;32m"
              << GX_VERSION << endl
@@ -1023,6 +1139,10 @@ void CmdlineOptions::process(int argc, char** argv) {
 	    GxLogger::get_logger().unplug_queue();
 	}
     }
+
+#if defined(_WIN32) && !defined(GUITARIX_AS_PLUGIN)
+    apply_windows_portable_resource_dirs();
+#endif
 
     make_ending_slash(builder_dir);
     make_ending_slash(style_dir);
@@ -1078,12 +1198,16 @@ int gx_system_call(const string& cmd,
 
     //    cerr << " ********* \n system command = " << str.c_str() << endl;
 
+#ifndef _WIN32
     sigset_t waitset;
     sigemptyset(&waitset);
     sigaddset(&waitset, SIGCHLD);
     sigprocmask(SIG_UNBLOCK, &waitset, NULL);
+#endif
     int rc = system(str.c_str());
+#ifndef _WIN32
     sigprocmask(SIG_BLOCK, &waitset, NULL);
+#endif
     return rc;
 }
 

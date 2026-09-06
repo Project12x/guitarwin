@@ -1,0 +1,23 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+This project follows the Keep a Changelog format.
+
+## [Unreleased]
+
+### Added
+
+- Restored the Windows standalone port work from Codex session history after the
+  local repository was deleted.
+- Added MSYS2/MinGW64 standalone build documentation, packaging helpers, bundle
+  verification, source archive generation, and Windows runtime provenance
+  manifest support.
+
+### Changed
+
+- Ported the standalone Guitarix build path toward Windows by adding guarded
+  JACK/LADSPA/LV2 build options, Windows-compatible dynamic loading, socket,
+  filesystem, signal, and child-process handling.
+- Kept the first Windows standalone milestone focused on JACK and the existing
+  upstream architecture while documenting LRDF and LV2 follow-up blockers.

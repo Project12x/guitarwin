@@ -27,8 +27,15 @@
 
 #include <sigc++/sigc++.h>
 
+#include <csignal>
 #include <string>
 #include <list>
+
+#ifdef _WIN32
+#ifndef SIGKILL
+#define SIGKILL SIGTERM
+#endif
+#endif
 
 namespace gx_child_process {
 

@@ -300,6 +300,7 @@ private:
 public:
     PathList(const char *env_name = 0);
     void add(const std::string& d) { dirs.push_back(Gio::File::create_for_path(d)); }
+    void replace(const std::string& old_dir, const std::string& new_dir);
     bool contains(const std::string& d) const;
     bool find_dir(std::string *d, const std::string& filename) const;
     size_t size() { return dirs.size(); }
@@ -375,10 +376,10 @@ protected:
 public:
 #ifdef GUITARIX_AS_PLUGIN
     BasicOptions(const char *modulepath);
-    void replace_sysIRDir(const std::string& dir);
 #else
     BasicOptions();
 #endif
+    void replace_sysIRDir(const std::string& dir);
     ~BasicOptions();
     std::string get_user_filepath(const std::string& basename) const { return user_dir + basename; }
     std::string get_user_ir_filepath(const std::string& basename) const { return user_IR_dir + basename; }
@@ -445,6 +446,9 @@ private:
     bool a_save;
     bool auto_save;
     std::string get_opskin();
+#if defined(_WIN32) && !defined(GUITARIX_AS_PLUGIN)
+    void apply_windows_portable_resource_dirs();
+#endif
 
 public:
 #ifndef NDEBUG

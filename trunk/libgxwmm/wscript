@@ -11,6 +11,8 @@ def build(bld):
     bld.recurse('gxwmm')
     if env.NEW_LADSPA:
         return
+    if env.IS_MSWIN:
+        return
     bld.add_group()
     prog = bld(features = 'cxx cprogram',
                source = 'gxw_demo.cc',

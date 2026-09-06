@@ -273,7 +273,8 @@ def build(bld):
             )
         if not env.NO_LDCONFIG:
             if bld.is_install and not Options.options.destdir \
-               and not Options.options.no_ldconfig and os.geteuid() == 0:
+               and not Options.options.no_ldconfig \
+               and hasattr(os, 'geteuid') and os.geteuid() == 0:
                 bld.add_post_fun_ignore_errors(
                     lambda ctx: ctx.exec_command('/sbin/ldconfig'))
     else:
