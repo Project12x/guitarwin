@@ -54,7 +54,8 @@ used `D:\tmp\codex\guitarwin-build-20260906` as the staged prefix and
 `./waf build -j 4`, `./waf install`, 72 `lv2ls` Guitarix entries from the staged
 LV2 root, static bundle verification, 72 `lv2ls` entries from the packaged
 bundle `lib/lv2`, and no-GUI JACK/Guitarix smoke with `GuitarixAlive: True` and
-`JackInitLogged: True`.
+`JackInitLogged: True`. The same bundle also passed the bounded hidden GUI smoke
+mode with `GuitarixAlive: True` and `JackInitLogged: True`.
 
 ## Build environment
 
