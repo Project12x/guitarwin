@@ -27,6 +27,7 @@ To compile the Guitarix standalone application and LV2 plugins on MS-Windows:
   # git clone https://github.com/brummer10/guitarix
   # cd guitarix/trunk
 - Configure and build the standalone application and LV2 plugins:
+  # export INTLTOOL=/usr/bin/intltool-merge
   # ./waf configure -j 4	\
       --check-cxx-compiler=g++	\
       --no-faust		\
@@ -39,20 +40,20 @@ To compile the Guitarix standalone application and LV2 plugins on MS-Windows:
       --no-lrdf		\
       && ./waf build
 - Stage an install tree:
-  # ./waf install --destdir=/c/tmp/guitarix-stage
+  # ./waf install --destdir=/d/tmp/codex/guitarix-stage
 - Run a staged smoke with MSYS2 runtime DLLs on PATH:
-  # export PATH=/c/tmp/guitarix-stage/msys64/tmp/lib:/mingw64/bin:/usr/bin:$PATH
-  # /c/tmp/guitarix-stage/msys64/tmp/bin/guitarix.exe --version
-  # export LV2_PATH=/c/tmp/guitarix-stage/msys64/tmp/lib/lv2
+  # export PATH=/d/tmp/codex/guitarix-stage/msys64/tmp/lib:/mingw64/bin:/usr/bin:$PATH
+  # /d/tmp/codex/guitarix-stage/msys64/tmp/bin/guitarix.exe --version
+  # export LV2_PATH=/d/tmp/codex/guitarix-stage/msys64/tmp/lib/lv2
   # lv2ls | grep -c guitarix
 - Build a direct-launchable lean standalone bundle:
   # python tools/package-msys2-standalone.py \
-      --staged-prefix /c/tmp/guitarix-stage/msys64/tmp \
-      --bundle-dir /c/tmp/guitarix-bundle
+      --staged-prefix /d/tmp/codex/guitarix-stage/msys64/tmp \
+      --bundle-dir /d/tmp/codex/guitarix-bundle
 - Build a bundle that also includes the installed Guitarix LV2 plugins:
   # python tools/package-msys2-standalone.py \
-      --staged-prefix /c/tmp/guitarix-stage/msys64/tmp \
-      --bundle-dir /c/tmp/guitarix-bundle-lv2 \
+      --staged-prefix /d/tmp/codex/guitarix-stage/msys64/tmp \
+      --bundle-dir /d/tmp/codex/guitarix-bundle-lv2 \
       --include-lv2
 
 The bundle helper copies MinGW/JACK/GTK runtime DLLs into "bin", copies
@@ -68,7 +69,7 @@ counts.
 
 To smoke-test a bundle from PowerShell:
 
-  > powershell -ExecutionPolicy Bypass -File .\tools\smoke-msys2-standalone.ps1 -BundleDir C:\tmp\guitarix-bundle
+  > powershell -ExecutionPolicy Bypass -File .\tools\smoke-msys2-standalone.ps1 -BundleDir D:\tmp\codex\guitarix-bundle
 
 The smoke starts the bundled JACK dummy backend, runs "guitarix.exe -N
 --log-terminal", and checks that Guitarix logs the expected JACK sample rate and
@@ -77,21 +78,21 @@ no-GUI engine smoke.
 
 To check bundle contents without launching Guitarix:
 
-  > powershell -ExecutionPolicy Bypass -File .\tools\verify-msys2-standalone-bundle.ps1 -BundleDir C:\tmp\guitarix-bundle
+  > powershell -ExecutionPolicy Bypass -File .\tools\verify-msys2-standalone-bundle.ps1 -BundleDir D:\tmp\codex\guitarix-bundle
 
 The verifier checks required executables, resources, GTK/JACK runtime data,
 license/source files, and the generated bundle manifest.
 
 To archive a verified bundle:
 
-  > powershell -ExecutionPolicy Bypass -File .\tools\archive-msys2-standalone.ps1 -BundleDir C:\tmp\guitarix-bundle -OutputDir C:\tmp\guitarix-dist
+  > powershell -ExecutionPolicy Bypass -File .\tools\archive-msys2-standalone.ps1 -BundleDir D:\tmp\codex\guitarix-bundle -OutputDir D:\tmp\codex\guitarix-dist
 
 The archive helper writes a ZIP and a ".sha256" checksum sidecar.
 It runs the static bundle verifier first unless "-SkipVerify" is passed.
 
 To archive the corresponding source tree from a clean Git checkout:
 
-  > powershell -ExecutionPolicy Bypass -File .\tools\archive-guitarwin-source.ps1 -OutputDir C:\tmp\guitarix-dist
+  > powershell -ExecutionPolicy Bypass -File .\tools\archive-guitarwin-source.ps1 -OutputDir D:\tmp\codex\guitarix-dist
 
 The source archive helper writes a Git "HEAD" source ZIP and a ".sha256"
 checksum sidecar. It refuses dirty working trees unless "-AllowDirty" is passed.

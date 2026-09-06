@@ -34,14 +34,14 @@ Validated locally:
 
 1. `./waf configure` completes for the standalone and LV2 targets.
 2. `./waf build -j 4` completes.
-3. `./waf install --destdir=/c/tmp/guitarwin-lv2-stage` completes.
+3. `./waf install --destdir=/d/tmp/codex/guitarwin-lv2-stage` completes.
 4. `build/src/gx_head/guitarix.exe --help` prints the expected CLI options.
 5. `build/src/gx_head/guitarix.exe --version` reports Guitarix 0.47.0.
 6. `lv2ls` discovers 72 Guitarix plugin URIs from the staged install LV2 root.
 7. The installed `guitarix.exe -N --log-terminal` stays alive against
    `jackd -d dummy -r 48000 -p 1024` and logs the JACK sample rate/buffer size.
 8. A staged executable launched from
-   `C:/tmp/guitarwin-portable-stage/msys64/tmp/bin/guitarix.exe` finds its
+   `D:/tmp/codex/guitarwin-portable-stage/msys64/tmp/bin/guitarix.exe` finds its
    resources beside that executable instead of requiring the compiled
    `C:/msys64/tmp` prefix.
 
@@ -73,6 +73,7 @@ $env:PATH='D:\code\Guitarwin\trunk\build\libgxw\gxw;' +
 The current passing standalone configuration is:
 
 ```sh
+export INTLTOOL=/usr/bin/intltool-merge
 ./waf configure -j 4 \
     --check-cxx-compiler=g++ \
     --no-faust \
@@ -123,6 +124,10 @@ pacman -S \
     mingw-w64-x86_64-ladspa-sdk \
     intltool
 ```
+
+MSYS2 installs `intltool-merge` as an extensionless script. Set `INTLTOOL`
+explicitly during configure so Waf's MinGW Python process does not miss it
+during Windows program lookup.
 
 ## Portability changes made
 
@@ -181,8 +186,8 @@ to finish.
 The staged install root used for discovery was:
 
 ```sh
-./waf install --destdir=/c/tmp/guitarwin-lv2-stage
-export LV2_PATH=/c/tmp/guitarwin-lv2-stage/msys64/tmp/lib/lv2
+./waf install --destdir=/d/tmp/codex/guitarwin-lv2-stage
+export LV2_PATH=/d/tmp/codex/guitarwin-lv2-stage/msys64/tmp/lib/lv2
 lv2ls | grep -c guitarix
 ```
 
@@ -204,7 +209,7 @@ After installing to the configured prefix (`C:/msys64/tmp`), the standalone
 executable starts in no-GUI mode against that server:
 
 ```sh
-export XDG_CONFIG_HOME=/c/tmp/guitarwin-smoke-config-banklist
+export XDG_CONFIG_HOME=/d/tmp/codex/guitarwin-smoke-config-banklist
 export PATH=/c/msys64/tmp/lib:/mingw64/bin:/usr/bin:$PATH
 /c/msys64/tmp/bin/guitarix.exe -N --log-terminal
 ```
@@ -241,13 +246,13 @@ Explicit `--style-dir` and `--builder-dir` values are still honored.
 The latest staged smoke used:
 
 ```sh
-./waf install --destdir=/c/tmp/guitarwin-portable-stage
-export PATH=/c/tmp/guitarwin-portable-stage/msys64/tmp/lib:/mingw64/bin:/usr/bin:$PATH
-export LV2_PATH=/c/tmp/guitarwin-portable-stage/msys64/tmp/lib/lv2
-/c/tmp/guitarwin-portable-stage/msys64/tmp/bin/guitarix.exe --version
+./waf install --destdir=/d/tmp/codex/guitarwin-portable-stage
+export PATH=/d/tmp/codex/guitarwin-portable-stage/msys64/tmp/lib:/mingw64/bin:/usr/bin:$PATH
+export LV2_PATH=/d/tmp/codex/guitarwin-portable-stage/msys64/tmp/lib/lv2
+/d/tmp/codex/guitarwin-portable-stage/msys64/tmp/bin/guitarix.exe --version
 lv2ls | grep -c guitarix
 jackd -d dummy -r 48000 -p 1024
-/c/tmp/guitarwin-portable-stage/msys64/tmp/bin/guitarix.exe -N --log-terminal
+/d/tmp/codex/guitarwin-portable-stage/msys64/tmp/bin/guitarix.exe -N --log-terminal
 ```
 
 Results:
@@ -264,8 +269,8 @@ install:
 
 ```sh
 python tools/package-msys2-standalone.py \
-    --staged-prefix /c/tmp/guitarwin-portable-stage/msys64/tmp \
-    --bundle-dir /c/tmp/guitarwin-bundle-lean
+    --staged-prefix /d/tmp/codex/guitarwin-portable-stage/msys64/tmp \
+    --bundle-dir /d/tmp/codex/guitarwin-bundle-lean
 ```
 
 By default this is a lean standalone bundle:
@@ -299,7 +304,7 @@ By default this is a lean standalone bundle:
   matching source ZIP plus `.sha256` checksum sidecar for GPL redistribution.
 
 The latest lean-bundle smoke used
-`C:/tmp/guitarwin-bundle-lean-1783121694` and ran from PowerShell without adding
+`D:/tmp/codex/guitarwin-bundle-lean-1783121694` and ran from PowerShell without adding
 MSYS2 to `PATH` and without setting `HOME`:
 
 ```powershell
@@ -318,19 +323,19 @@ Results:
 - The reusable smoke command is:
 
   ```powershell
-  powershell -ExecutionPolicy Bypass -File .\tools\smoke-msys2-standalone.ps1 -BundleDir C:\tmp\guitarwin-bundle-lean-1783121694
+  powershell -ExecutionPolicy Bypass -File .\tools\smoke-msys2-standalone.ps1 -BundleDir D:\tmp\codex\guitarwin-bundle-lean-1783121694
   ```
 
 The fuller LV2 bundle mode has also been smoke-tested:
 
 ```sh
 python tools/package-msys2-standalone.py \
-    --staged-prefix /c/tmp/guitarwin-portable-stage/msys64/tmp \
-    --bundle-dir /c/tmp/guitarwin-bundle-full \
+    --staged-prefix /d/tmp/codex/guitarwin-portable-stage/msys64/tmp \
+    --bundle-dir /d/tmp/codex/guitarwin-bundle-full \
     --include-lv2
 ```
 
-The latest full-bundle smoke used `C:/tmp/guitarwin-bundle-full-1783281219`.
+The latest full-bundle smoke used `D:/tmp/codex/guitarwin-bundle-full-1783281219`.
 Direct `guitarix.exe --version` reports Guitarix 0.47.0,
 `LV2_PATH=<bundle>/lib/lv2 lv2ls | grep -c guitarix` reports 72, and bundled
 `jackd.exe` plus bundled `guitarix.exe -N --log-terminal` logs JACK 48000 Hz /
@@ -338,7 +343,7 @@ Direct `guitarix.exe --version` reports Guitarix 0.47.0,
 PowerShell smoke helper passed against this full bundle.
 
 The GTK-runtime-data packaging path was smoke-tested with
-`C:/tmp/guitarwin-bundle-manifest-final`. The helper copied 3,742 GTK runtime data
+`D:/tmp/codex/guitarwin-bundle-manifest-final`. The helper copied 3,742 GTK runtime data
 files, 138 runtime license files, and 90 runtime dependencies. Representative
 data roots such as `share/glib-2.0/schemas`, `share/icons/Adwaita`,
 `lib/gdk-pixbuf-2.0`, and `lib/gtk-3.0` are present, `share/licenses` and
@@ -350,7 +355,7 @@ bundle.
 The latest archive smoke used:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\archive-msys2-standalone.ps1 -BundleDir C:\tmp\guitarwin-bundle-manifest-final -OutputDir C:\tmp\guitarwin-archives-verify-default
+powershell -ExecutionPolicy Bypass -File .\tools\archive-msys2-standalone.ps1 -BundleDir D:\tmp\codex\guitarwin-bundle-manifest-final -OutputDir D:\tmp\codex\guitarwin-archives-verify-default
 ```
 
 That produced a 74,764,670-byte ZIP plus `.sha256` sidecar. The sidecar hash
@@ -361,7 +366,7 @@ ZIP contains `BUNDLE_MANIFEST.json`, `SOURCE.md`, and
 The source archive helper can be run after the release commit is clean:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\archive-guitarwin-source.ps1 -OutputDir C:\tmp\guitarwin-archives-source
+powershell -ExecutionPolicy Bypass -File .\tools\archive-guitarwin-source.ps1 -OutputDir D:\tmp\codex\guitarwin-archives-source
 ```
 
 It refuses dirty working trees by default. Use `-AllowDirty` only when

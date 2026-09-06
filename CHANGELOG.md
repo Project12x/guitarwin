@@ -16,6 +16,8 @@ This project follows the Keep a Changelog format.
 
 ### Changed
 
+- Documented `D:\tmp\codex` scratch paths and the explicit MSYS2 `INTLTOOL`
+  configure override validated after moving the checkout to `D:\code`.
 - Updated Windows standalone setup notes for the moved `D:\code\Guitarwin`
   checkout path.
 - Ported the standalone Guitarix build path toward Windows by adding guarded
