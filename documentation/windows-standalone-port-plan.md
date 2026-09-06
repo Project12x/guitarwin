@@ -55,15 +55,15 @@ an MSYS2 MinGW64 shell or equivalent environment:
 
 ```sh
 export PATH=/mingw64/bin:/usr/bin:$PATH
-cd /c/Users/estee/Documents/Guitarwin/trunk
+cd /d/code/Guitarwin/trunk
 ```
 
 Useful Windows PowerShell setup for smoke-testing the built executable:
 
 ```powershell
-$env:HOME='C:\Users\estee\Documents\Guitarwin\.msys-home'
-$env:PATH='C:\Users\estee\Documents\Guitarwin\trunk\build\libgxw\gxw;' +
-          'C:\Users\estee\Documents\Guitarwin\trunk\build\libgxwmm\gxwmm;' +
+$env:HOME='D:\code\Guitarwin\.msys-home'
+$env:PATH='D:\code\Guitarwin\trunk\build\libgxw\gxw;' +
+          'D:\code\Guitarwin\trunk\build\libgxwmm\gxwmm;' +
           'C:\msys64\mingw64\bin;C:\msys64\usr\bin;' + $env:PATH
 .\trunk\build\src\gx_head\guitarix.exe --help
 ```

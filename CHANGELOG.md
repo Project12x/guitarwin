@@ -16,6 +16,8 @@ This project follows the Keep a Changelog format.
 
 ### Changed
 
+- Updated Windows standalone setup notes for the moved `D:\code\Guitarwin`
+  checkout path.
 - Ported the standalone Guitarix build path toward Windows by adding guarded
   JACK/LADSPA/LV2 build options, Windows-compatible dynamic loading, socket,
   filesystem, signal, and child-process handling.
